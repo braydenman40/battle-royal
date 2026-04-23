@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>2D Battle Royale - Lobby</title>
+    <style>
+        body { margin: 0; background: #1a1a1a; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .screen { text-align: center; background: #2a2a2a; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 400px; display: none; }
+        .active { display: block; } /* Only the active screen shows */
+        
+        h1 { margin-bottom: 30px; color: #00ff88; letter-spacing: 2px; }
+        button { width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        
+        .btn-host { background: #00ff88; color: #1a1a1a; }
+        .btn-host:hover { background: #00cc6e; }
+        .btn-join { background: #0088ff; color: white; }
+        .btn-join:hover { background: #0066cc; }
+        
+        input { width: 90%; padding: 12px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #444; background: #111; color: white; text-align: center; font-size: 20px; }
+        .code-display { font-size: 48px; font-weight: bold; color: #ffcc00; margin: 20px 0; letter-spacing: 5px; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #00ff88; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="home-menu" class="screen active">
+        <h1>BATTLE ARENA</h1>
+        <button class="btn-host" onclick="showHostPage()">HOST GAME</button>
+        <button class="btn-join" onclick="showJoinPage()">JOIN GAME</button>
+    </div>
+
+    <div id="join-page" class="screen">
+        <h1>JOIN GAME</h1>
+        <input type="text" id="roomInput" placeholder="ENTER 4-CHAR CODE" maxlength="4">
+        <button class="btn-join" onclick="processJoin()">CONNECT</button>
+        <button style="background:transparent; color:#888;" onclick="showHome()">BACK</button>
+    </div>
+
+    <div id="lobby-page" class="screen">
+        <h1>LOBBY</h1>
+        <p>Share this code with friends:</p>
+        <div class="code-display" id="generatedCode">----</div>
+        <div class="loader"></div>
+        <p id="playerCount">Waiting for players to join...</p>
+        <button class="btn-host" id="startBtn" style="display:none;">START MATCH</button>
+        <button style="background:transparent; color:#ff4444;" onclick="showHome()">CANCEL</button>
+    </div>
+
+    <script>
+        // Function to switch screens
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function showHome() { showScreen('home-menu'); }
+
+        function showJoinPage() { showScreen('join-page'); }
+
+        function showHostPage() {
+            // 1. Generate a random 4-character code
+            const code = Math.random().toString(36).substring(2, 6).toUpperCase();
+            document.getElementById('generatedCode').innerText = code;
+            
+            // 2. Show the lobby
+            showScreen('lobby-page');
+            
+            // In a real game, you'd tell the server here: socket.emit('createRoom', code);
+        }
+
+        function processJoin() {
+            const input = document.getElementById('roomInput').value.toUpperCase();
+            if (input.length === 4) {
+                alert("Searching for room: " + input);
+                // In a real game, you'd check the server here: socket.emit('joinRoom', input);
+            } else {
+                alert("Please enter a 4-character code.");
+            }
+        }
+    </script>
+</body>
+</html>
