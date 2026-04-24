@@ -3,44 +3,70 @@ const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
-app.use(express.static(__dirname)); // Serves your index.html
+app.use(express.static(__dirname));
 
-let rooms = {}; // This stores all active game rooms
+let rooms = {};
 
 io.on('connection', (socket) => {
-    console.log('A user connected:', socket.id);
-
-    // HOSTING A GAME
+    
+    // HOSTING
     socket.on('createRoom', () => {
         const code = Math.random().toString(36).substring(2, 6).toUpperCase();
-        rooms[code] = { host: socket.id, players: [socket.id] };
+        rooms[code] = { players: {}, gameStarted: false };
         
         socket.join(code);
+        rooms[code].players[socket.id] = { x: 400, y: 300, color: '#00ff88' };
+
         socket.emit('roomCreated', code);
-        console.log(`Room ${code} created by ${socket.id}`);
+        console.log(`Room Created: ${code}`);
     });
 
-    // JOINING A GAME
+    // JOINING
     socket.on('joinRoom', (code) => {
         if (rooms[code]) {
-            rooms[code].players.push(socket.id);
+            const currentPlayers = Object.keys(rooms[code].players).length;
+
+            if (currentPlayers >= 10) {
+                socket.emit('errorMsg', 'Room is full!');
+                return;
+            }
+
             socket.join(code);
-            
-            // Tell the person joining they are in
+            rooms[code].players[socket.id] = {
+                x: Math.random() * 700 + 50,
+                y: Math.random() * 500 + 50,
+                color: '#0088ff'
+            };
+
             socket.emit('joinedSuccess', code);
             
-            // Tell the host a new player joined
-            io.to(code).emit('playerJoined', rooms[code].players.length);
-            console.log(`User ${socket.id} joined room ${code}`);
+            // Send updated count to everyone in the room
+            const newCount = Object.keys(rooms[code].players).length;
+            io.to(code).emit('playerUpdate', newCount);
+
         } else {
-            socket.emit('errorMsg', 'Room not found! Check the code.');
+            socket.emit('errorMsg', 'Room not found!');
         }
     });
 
-    socket.on('disconnect', () => {
-        console.log('User disconnected');
+    // START GAME
+    socket.on('startGame', (code) => {
+        if (rooms[code]) {
+            rooms[code].gameStarted = true;
+            io.to(code).emit('initGame');
+        }
+    });
+
+    // CLEANUP ON DISCONNECT
+    socket.on('disconnecting', () => {
+        for (const room of socket.rooms) {
+            if (rooms[room]) {
+                delete rooms[room].players[socket.id];
+                const newCount = Object.keys(rooms[room].players).length;
+                io.to(room).emit('playerUpdate', newCount);
+            }
+        }
     });
 });
 
-const PORT = 3000;
-http.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+http.listen(3000, () => console.log('Server live on port 3000'));
